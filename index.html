@@ -341,8 +341,10 @@
     transition: background 0.15s;
   }
   button.primary:hover { background: var(--berry-dark); }
-  button.secondary {
+  button.secondary, a.secondary {
+    display: block;
     width: 100%;
+    box-sizing: border-box;
     border: 1.5px solid var(--berry);
     background: transparent;
     color: var(--berry);
@@ -353,6 +355,8 @@
     border-radius: 14px;
     cursor: pointer;
     margin-top: 10px;
+    text-align: center;
+    text-decoration: none;
   }
 
   /* Checkout modal */
@@ -473,6 +477,32 @@
   .paypal-btn:hover { opacity: 0.88; }
   .paypal-hint { font-size: 0.78rem; opacity: 0.7; margin: 10px 0 0; line-height: 1.5; }
 
+  .notify-status {
+    font-size: 0.82rem;
+    text-align: center;
+    margin: 14px 0 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--cream);
+  }
+  .notify-status.ok { color: var(--berry-dark); }
+  .notify-status.fail { color: var(--berry-dark); border: 1px solid var(--gold); }
+  .notify-status:empty { display: none; }
+
+  .email-fallback {
+    margin-top: 16px;
+    border-top: 1px dashed rgba(168,87,113,0.2);
+    padding-top: 12px;
+  }
+  .email-fallback summary {
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--berry);
+  }
+  .email-fallback[open] summary { margin-bottom: 4px; }
+
   footer.site {
     max-width: 1100px;
     margin: 40px auto 0;
@@ -512,8 +542,8 @@
     <h2>¿Cómo comprar?</h2>
     <p>
       Selecciona tus piezas favoritas, agrégalas al carrito y llena tus datos de envío.
-      Al confirmar, se abre tu correo con el pedido ya armado para mandárnoslo — te contestamos con el total
-      y el link de PayPal para pagar. Por ahora, los pedidos hechos aquí en la página se entregan
+      Al confirmar, pagas directo con PayPal — nosotros recibimos tu pedido automáticamente,
+      sin que tengas que hacer nada más. Por ahora, los pedidos hechos aquí en la página se entregan
       únicamente por envío a domicilio (Correos de México, +$100 MXN).
     </p>
   </div>
@@ -603,20 +633,17 @@
     </div>
 
     <div class="confirm-screen" id="confirmScreen">
-      <div class="icon">💌</div>
-      <h2>¡Casi listo!</h2>
+      <div class="icon">🎉</div>
+      <h2>¡Tu pedido está listo!</h2>
       <p class="hint">
-        Se abrió tu correo con el pedido ya redactado — solo dale enviar.
-        Si no se abrió automáticamente, copia este mensaje y mándalo tú misma/o a
-        <strong>mail@emithing.com.mx</strong>.
+        Ya avisamos a Emithing de tu pedido. Para terminar, paga con el botón de PayPal de aquí abajo.
       </p>
-      <textarea id="summaryText" readonly></textarea>
-      <button class="primary" id="copySummaryBtn">Copiar mensaje</button>
 
       <div class="order-code-box">
         <span class="order-code-label">Tu código de pedido</span>
         <span class="order-code-value" id="orderCodeVal">EMI-0000</span>
       </div>
+
       <a class="paypal-btn" id="paypalBtn" href="#" target="_blank" rel="noopener">
         💳 Pagar <span id="paypalAmount">$0 MXN</span> con PayPal
       </a>
@@ -625,6 +652,19 @@
         para que podamos identificar tu pedido. Si alguna pieza ya no estuviera disponible, te devolvemos tu pago o te
         proponemos una alternativa parecida.
       </p>
+
+      <p class="notify-status" id="notifyStatus"></p>
+
+      <details class="email-fallback">
+        <summary>¿Prefieres también avisarnos por correo?</summary>
+        <p class="hint" style="margin-top:10px;">
+          Opcional — ya recibimos tu pedido automáticamente, pero si quieres puedes mandarlo tú misma/o también a
+          <strong>mail@emithing.com.mx</strong>.
+        </p>
+        <textarea id="summaryText" readonly></textarea>
+        <a class="secondary" id="openMailBtn" href="#">Abrir correo con el pedido</a>
+        <button type="button" class="secondary" id="copySummaryBtn">Copiar mensaje</button>
+      </details>
 
       <button class="secondary" id="closeConfirmBtn">Cerrar</button>
     </div>
@@ -656,6 +696,35 @@ const PRODUCTS = [
 const SHIPPING_COST = 100;
 const ORDER_EMAIL = 'mail@emithing.com.mx';
 const PAYPAL_USER = 'emithing';
+// Reemplaza por tu endpoint real de Formspree (formspree.io → tu formulario → "Integration").
+// Mientras siga con XXXXXXXX, la notificación automática se omite sin romper nada.
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/XXXXXXXX';
+
+function notifyShopByForm(payload) {
+  const statusEl = document.getElementById('notifyStatus');
+  if (!FORMSPREE_ENDPOINT || FORMSPREE_ENDPOINT.includes('XXXXXXXX')) {
+    statusEl.textContent = '';
+    statusEl.className = 'notify-status';
+    return;
+  }
+  statusEl.textContent = 'Avisando a Emithing de tu pedido…';
+  statusEl.className = 'notify-status';
+  fetch(FORMSPREE_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(res => {
+    if (res.ok) {
+      statusEl.textContent = '✓ Ya avisamos a Emithing de tu pedido.';
+      statusEl.className = 'notify-status ok';
+    } else {
+      throw new Error('bad status');
+    }
+  }).catch(() => {
+    statusEl.textContent = 'No pudimos avisar automáticamente — por favor manda también el correo de aquí abajo.';
+    statusEl.className = 'notify-status fail';
+  });
+}
 
 function generateOrderCode() {
   return 'EMI-' + Math.floor(1000 + Math.random() * 9000);
@@ -887,11 +956,24 @@ document.getElementById('checkoutForm').addEventListener('submit', function (ev)
   const subject = encodeURIComponent(`Pedido Emithing ${orderCode} — ${data.name || 'nuevo pedido'}`);
   const bodyEnc = encodeURIComponent(summaryText);
   const mailtoLink = `mailto:${ORDER_EMAIL}?subject=${subject}&body=${bodyEnc}`;
+  document.getElementById('openMailBtn').href = mailtoLink;
 
   formScreen.classList.add('hidden');
   confirmScreen.classList.add('open');
 
-  window.location.href = mailtoLink;
+  notifyShopByForm({
+    orderCode: orderCode,
+    total: total,
+    subtotal: subtotal,
+    shipping: SHIPPING_COST,
+    items: entries.map(e => `${e.qty} x ${e.product.name} (${money(e.product.price * e.qty)})`).join(' | '),
+    nombre: data.name,
+    correo: data.email,
+    telefono: data.phone,
+    direccion: `${data.street}, Col. ${data.neighborhood}, CP ${data.zip}, ${data.city}, ${data.state}`,
+    notas: data.notes,
+    _subject: `Pedido Emithing ${orderCode}`,
+  });
 
   // Vaciar carrito tras generar el pedido
   cart = {};
