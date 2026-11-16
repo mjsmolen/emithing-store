@@ -696,13 +696,11 @@ const PRODUCTS = [
 const SHIPPING_COST = 100;
 const ORDER_EMAIL = 'mail@emithing.com.mx';
 const PAYPAL_USER = 'emithing';
-// Reemplaza por tu endpoint real de Formspree (formspree.io → tu formulario → "Integration").
-// Mientras siga con XXXXXXXX, la notificación automática se omite sin romper nada.
-const FORMSPREE_ENDPOINT = 'https://formspree.io/f/XXXXXXXX';
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xdegerna';
 
 function notifyShopByForm(payload) {
   const statusEl = document.getElementById('notifyStatus');
-  if (!FORMSPREE_ENDPOINT || FORMSPREE_ENDPOINT.includes('XXXXXXXX')) {
+  if (!FORMSPREE_ENDPOINT || FORMSPREE_ENDPOINT.includes('xdegerna')) {
     statusEl.textContent = '';
     statusEl.className = 'notify-status';
     return;
