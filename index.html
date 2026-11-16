@@ -193,8 +193,14 @@
     align-items: center;
     justify-content: center;
     background: var(--accent-bg, var(--cream));
+    padding: 10%;
   }
-  .card .thumb svg { width: 46%; height: 46%; }
+  .card .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+  }
   .card .info { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
   .card .name {
     font-family: 'Quicksand', sans-serif;
@@ -283,8 +289,9 @@
     background: var(--accent-bg, var(--cream-2));
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
+    padding: 6px;
   }
-  .cart-item .thumb-sm svg { width: 60%; height: 60%; }
+  .cart-item .thumb-sm img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
   .cart-item .meta { flex: 1; min-width: 0; }
   .cart-item .meta .name { font-family: 'Quicksand', sans-serif; font-weight: 600; font-size: 0.92rem; margin: 0 0 2px; }
   .cart-item .meta .price { font-size: 0.85rem; color: var(--berry); }
@@ -426,6 +433,46 @@
   }
   .form-screen.hidden, .confirm-screen.hidden { display: none; }
 
+  .order-code-box {
+    margin-top: 16px;
+    background: var(--cream);
+    border: 1.5px dashed var(--gold);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .order-code-label { font-size: 0.82rem; opacity: 0.75; }
+  .order-code-value {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--berry-dark);
+    font-size: 1.05rem;
+  }
+  .paypal-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 12px;
+    background: #0a2540;
+    color: #ffffff;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 14px;
+    border-radius: 14px;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: opacity 0.15s;
+  }
+  .paypal-btn:hover { opacity: 0.88; }
+  .paypal-hint { font-size: 0.78rem; opacity: 0.7; margin: 10px 0 0; line-height: 1.5; }
+
   footer.site {
     max-width: 1100px;
     margin: 40px auto 0;
@@ -442,8 +489,6 @@
 </style>
 </head>
 <body>
-
-<div class="demo-banner">🚧 Vista previa — productos de ejemplo, aún no son las piezas reales de Emithing 🚧</div>
 
 <header class="site">
   <a class="brand" href="#inicio">Emithing<span class="dot">.</span></a>
@@ -567,44 +612,54 @@
       </p>
       <textarea id="summaryText" readonly></textarea>
       <button class="primary" id="copySummaryBtn">Copiar mensaje</button>
+
+      <div class="order-code-box">
+        <span class="order-code-label">Tu código de pedido</span>
+        <span class="order-code-value" id="orderCodeVal">EMI-0000</span>
+      </div>
+      <a class="paypal-btn" id="paypalBtn" href="#" target="_blank" rel="noopener">
+        💳 Pagar <span id="paypalAmount">$0 MXN</span> con PayPal
+      </a>
+      <p class="paypal-hint">
+        Al pagar, escribe tu código <strong id="paypalCodeHint">EMI-0000</strong> en el campo de nota/mensaje de PayPal,
+        para que podamos identificar tu pedido. Si alguna pieza ya no estuviera disponible, te devolvemos tu pago o te
+        proponemos una alternativa parecida.
+      </p>
+
       <button class="secondary" id="closeConfirmBtn">Cerrar</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ---------- Datos de ejemplo (REEMPLAZAR con productos reales) ---------- */
+/* ---------- Colecciones y productos reales ---------- */
 const COLLECTIONS = [
-  { id: 'a', name: 'Hello Kitty', sub: '', accent: '#f3dfe6' },
-  { id: 'b', name: 'Dulces pecados', sub: '', accent: '#eae3ef' },
-  { id: 'c', name: 'Halloween', sub: '', accent: '#faf0da' },
+  { id: 'animalitos', name: 'Animalitos', sub: 'Patitas y huellitas que derriten corazones', accent: '#f3dfe6' },
+  { id: 'comida', name: 'Antojitos', sub: 'Para las fans de la comida más tierna', accent: '#faf0da' },
+  { id: 'dulces', name: 'Dulces', sub: 'Un toque dulce para cualquier look', accent: '#eae3ef' },
+  { id: 'escuela', name: 'De vuelta a clases', sub: '', accent: '#e9efe1' },
 ];
 
-function placeholderIcon(color) {
-  return `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="32" cy="18" r="8" stroke="${color}" stroke-width="3"/>
-    <path d="M32 26 L32 40" stroke="${color}" stroke-width="3" stroke-linecap="round"/>
-    <path d="M20 40 C20 52, 44 52, 44 40 C44 34, 20 34, 20 40 Z" stroke="${color}" stroke-width="3"/>
-  </svg>`;
-}
-
-const ACCENT_COLORS = { a: '#A85771', b: '#A287B2', c: '#DBAA54' };
-
 const PRODUCTS = [
-  { id: 1, collection: 'a', name: 'Producto de ejemplo 1', price: 150, desc: 'Descripción breve pendiente.' },
-  { id: 2, collection: 'a', name: 'Producto de ejemplo 2', price: 180, desc: 'Descripción breve pendiente.' },
-  { id: 3, collection: 'a', name: 'Producto de ejemplo 3', price: 165, desc: 'Descripción breve pendiente.' },
-  { id: 4, collection: 'b', name: 'Producto de ejemplo 4', price: 200, desc: 'Descripción breve pendiente.' },
-  { id: 5, collection: 'b', name: 'Producto de ejemplo 5', price: 220, desc: 'Descripción breve pendiente.' },
-  { id: 6, collection: 'b', name: 'Producto de ejemplo 6', price: 190, desc: 'Descripción breve pendiente.' },
-  { id: 7, collection: 'b', name: 'Producto de ejemplo 7', price: 175, desc: 'Descripción breve pendiente.' },
-  { id: 8, collection: 'c', name: 'Producto de ejemplo 8', price: 210, desc: 'Descripción breve pendiente.' },
-  { id: 9, collection: 'c', name: 'Producto de ejemplo 9', price: 160, desc: 'Descripción breve pendiente.' },
-  { id: 10, collection: 'c', name: 'Producto de ejemplo 10', price: 195, desc: 'Descripción breve pendiente.' },
+  { id: 1, collection: 'animalitos', name: 'Patitas Fluffy', price: 100, desc: 'Huellitas de fieltro suave, tan tiernas como una patita de verdad.', img: 'patitas-fluffy-rosa.jpg' },
+  { id: 2, collection: 'animalitos', name: 'Patitas Café', price: 100, desc: 'La versión chocolatosa de nuestras huellitas favoritas.', img: 'patitas-cafe.jpg' },
+  { id: 3, collection: 'animalitos', name: 'Patitas Fosforescentes', price: 120, desc: 'Huellitas que brillan un poquito más — ¡edición especial!', img: 'patitas-fosforescentes.jpg' },
+  { id: 4, collection: 'animalitos', name: 'Patitas Fluffy Blancas', price: 100, desc: 'Suaves, esponjositas y listas para acompañarte todo el día.', img: 'patitas-fluffy-blanco.jpg' },
+  { id: 5, collection: 'comida', name: 'Happy Dumplings', price: 100, desc: 'Los dumplings más felices que vas a usar en tus orejas.', img: 'happy-dumplings.jpg' },
+  { id: 6, collection: 'comida', name: 'Fresitas', price: 100, desc: 'Dulces, jugosas y perfectas para cualquier outfit.', img: 'fresitas.jpg' },
+  { id: 7, collection: 'comida', name: 'Sushi Maki', price: 100, desc: 'Para las fans del sushi que también aman los accesorios lindos.', img: 'sushi-maki.jpg' },
+  { id: 8, collection: 'dulces', name: 'Gomitas Coca-Cola', price: 100, desc: 'Inspiradas en las gomitas más antojables del mundo.', img: 'gomitas-cocacola.jpg' },
+  { id: 9, collection: 'dulces', name: 'Barritas de Azúcar', price: 100, desc: 'Un arcoíris de azúcar para alegrarte el día.', img: 'barritas-azucar.jpg' },
+  { id: 10, collection: 'escuela', name: 'Pizarrón', price: 100, desc: 'Pizarrón, gis y una manzanita — perfecto para la vuelta a clases.', img: 'pizarron.jpg' },
 ];
 
 const SHIPPING_COST = 100;
 const ORDER_EMAIL = 'mail@emithing.com.mx';
+const PAYPAL_USER = 'emithing';
+
+function generateOrderCode() {
+  return 'EMI-' + Math.floor(1000 + Math.random() * 9000);
+}
 
 /* ---------- Estado del carrito (localStorage) ---------- */
 function loadCart() {
@@ -632,7 +687,7 @@ function renderCatalog() {
       return `
       <div class="card">
         <div class="thumb" style="--accent-bg:${col.accent}">
-          ${placeholderIcon(ACCENT_COLORS[col.id])}
+          <img src="img/${p.img}" alt="${p.name}" loading="lazy">
         </div>
         <div class="info">
           <p class="name">${p.name}</p>
@@ -709,7 +764,7 @@ function renderCart() {
     const col = COLLECTIONS.find(c => c.id === e.product.collection);
     return `
     <div class="cart-item" data-id="${e.product.id}">
-      <div class="thumb-sm" style="--accent-bg:${col.accent}">${placeholderIcon(ACCENT_COLORS[e.product.collection])}</div>
+      <div class="thumb-sm" style="--accent-bg:${col.accent}"><img src="img/${e.product.img}" alt="${e.product.name}"></div>
       <div class="meta">
         <p class="name">${e.product.name}</p>
         <p class="price">${money(e.product.price)}</p>
@@ -797,9 +852,12 @@ document.getElementById('checkoutForm').addEventListener('submit', function (ev)
   const entries = cartEntries();
   const subtotal = cartSubtotal();
   const total = subtotal + SHIPPING_COST;
+  const orderCode = generateOrderCode();
 
   const lines = [];
   lines.push('¡Hola Emithing! Quiero hacer este pedido:');
+  lines.push('');
+  lines.push(`Código de pedido: ${orderCode}`);
   lines.push('');
   entries.forEach(e => {
     lines.push(`- ${e.qty} × ${e.product.name} — ${money(e.product.price * e.qty)}`);
@@ -816,12 +874,17 @@ document.getElementById('checkoutForm').addEventListener('submit', function (ev)
   lines.push(`Dirección: ${data.street}, Col. ${data.neighborhood}, CP ${data.zip}, ${data.city}, ${data.state}`);
   if (data.notes) lines.push(`Notas: ${data.notes}`);
   lines.push('');
-  lines.push('¡Quedo al pendiente del link de PayPal para pagar! Gracias 💛');
+  lines.push(`Ya hice (o estoy a punto de hacer) mi pago por PayPal con el código ${orderCode} en la nota. ¡Gracias! 💛`);
 
   const summaryText = lines.join('\n');
   document.getElementById('summaryText').value = summaryText;
 
-  const subject = encodeURIComponent(`Pedido Emithing — ${data.name || 'nuevo pedido'}`);
+  document.getElementById('orderCodeVal').textContent = orderCode;
+  document.getElementById('paypalCodeHint').textContent = orderCode;
+  document.getElementById('paypalAmount').textContent = money(total);
+  document.getElementById('paypalBtn').href = `https://paypal.me/${PAYPAL_USER}/${total}MXN`;
+
+  const subject = encodeURIComponent(`Pedido Emithing ${orderCode} — ${data.name || 'nuevo pedido'}`);
   const bodyEnc = encodeURIComponent(summaryText);
   const mailtoLink = `mailto:${ORDER_EMAIL}?subject=${subject}&body=${bodyEnc}`;
 
